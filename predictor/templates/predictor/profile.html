@@ -1,0 +1,126 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyWise — Profile</title>
+    <link rel="stylesheet" href="{% static 'predictor/css/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'predictor/css/forms.css' %}">
+</head>
+<body>
+
+<div class="layout">
+    <div class="sidebar">
+        <div class="brand">StudyWise</div>
+        <nav>
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <a href="{% url 'predict' %}">Log Session</a>
+        </nav>
+
+    </div>
+
+    <div class="main">
+        <div class="topbar">
+            <div>
+                <h1 class="page-greeting-main">Hi, {{ user.username }} 👋</h1>
+                <h2 class="page-subgreeting">
+                    {{ greeting }} 
+                    {% if 'morning' in greeting|lower %}🌅{% elif 'afternoon' in greeting|lower %}☀️{% elif 'evening' in greeting|lower %}🌙{% else %}✨{% endif %}
+                </h2>
+                <p class="greeting-subtitle" style="font-size:13px; color:var(--text-muted); margin:4px 0 0;">Manage your account details and settings.</p>
+            </div>
+            <div class="topbar-right">
+                <div class="user-pill">Member since {{ member_since|date:"M Y" }}</div>
+                <div class="topbar-dropdown" id="accountDropdown">
+                    <button type="button" class="topbar-dropdown-trigger" onclick="toggleDropdown('accountDropdown')">
+                        <span class="topbar-user-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </span>
+                        <span class="topbar-username">{{ user.username }}</span>
+                        <span class="topbar-dropdown-arrow">▾</span>
+                    </button>
+                    <div class="topbar-dropdown-menu">
+                        <a href="{% url 'profile' %}" class="topbar-dropdown-item">Profile</a>
+                        <a href="{% url 'profile' %}#account-settings" class="topbar-dropdown-item">Settings</a>
+                        <div class="topbar-dropdown-divider"></div>
+                        <form method="post" action="{% url 'logout' %}" style="margin:0;">
+                            {% csrf_token %}
+                            <button type="submit" class="topbar-dropdown-item">Log out</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="form-message">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="grid">
+            <div class="card hero">
+                <div class="tag">📚 Sessions Logged</div>
+                <div class="big-number">{{ total_sessions }}</div>
+            </div>
+
+            <div class="card accent">
+                <div class="tag">🔥 Current Streak</div>
+                <div class="big-number">{{ streak }}</div>
+                <div class="mini-stats">
+                    <div>{{ streak_message }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-action-container">
+            <button type="button" class="btn-toggle-settings" onclick="toggleAccountSettings()">⚙️ Account Settings</button>
+        </div>
+
+        <div class="grid" id="accountSettingsContainer" style="{% if username_form.errors or password_form.errors %}display: grid;{% else %}display: none;{% endif %}">
+            <div class="card col-12 settings-panel" id="account-settings">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <h2 class="settings-title" style="margin-bottom:0;">⚙️ Account Settings</h2>
+                    <button type="button" class="btn-close-settings" onclick="toggleAccountSettings()" aria-label="Close Settings">✕</button>
+                </div>
+                <div class="settings-divider" style="margin-top:16px;"></div>
+
+                <div class="settings-body">
+                    <div class="settings-col">
+                        <h3 class="settings-section-title">Change Username</h3>
+                        <form method="post" class="settings-form">
+                            {% csrf_token %}
+                            {{ username_form.as_p }}
+                            <button type="submit" name="update_username" class="settings-btn">Save Username</button>
+                        </form>
+                    </div>
+
+                    <div class="settings-col">
+                        <h3 class="settings-section-title">Change Password</h3>
+                        <form method="post" class="settings-form password-form">
+                            {% csrf_token %}
+                            {{ password_form.as_p }}
+                            <button type="submit" name="change_password" class="settings-btn">Update Password</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card col-12">
+                <h2>💡 A couple of notes</h2>
+                <div class="insight-row"><div class="icon">🌱</div><div>Short, consistent sessions tend to beat occasional long ones. Try to log something most days.</div></div>
+                <div class="insight-row"><div class="icon">💬</div><div>Your dashboard's patterns get more reliable the more sessions you log.</div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'predictor/js/sidebar.js' %}"></script>
+</body>
+</html>

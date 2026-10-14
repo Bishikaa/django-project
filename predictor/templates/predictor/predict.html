@@ -1,0 +1,130 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyWise — Log Session</title>
+    <link rel="stylesheet" href="{% static 'predictor/css/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'predictor/css/forms.css' %}">
+</head>
+<body>
+
+<div class="layout">
+    <div class="sidebar">
+        <div class="brand">StudyWise</div>
+        <nav>
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <a href="{% url 'predict' %}" class="active">Log Session</a>
+        </nav>
+
+    </div>
+
+    <div class="main">
+        <div class="topbar">
+            <div>
+                <div class="page-greeting">Hi, {{ user.username }}</div>
+                <h1>How did today go?</h1>
+            </div>
+            <div class="topbar-right">
+                <div class="topbar-dropdown" id="accountDropdown">
+                    <button type="button" class="topbar-dropdown-trigger" onclick="toggleDropdown('accountDropdown')">
+                        <span class="topbar-user-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </span>
+                        <span class="topbar-username">{{ user.username }}</span>
+                        <span class="topbar-dropdown-arrow">▾</span>
+                    </button>
+                    <div class="topbar-dropdown-menu">
+                        <a href="{% url 'profile' %}" class="topbar-dropdown-item">Profile</a>
+                        <a href="{% url 'profile' %}#account-settings" class="topbar-dropdown-item">Settings</a>
+                        <div class="topbar-dropdown-divider"></div>
+                        <form method="post" action="{% url 'logout' %}" style="margin:0;">
+                            {% csrf_token %}
+                            <button type="submit" class="topbar-dropdown-item">Log out</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card wide" style="margin: 0;">
+            <p class="subtitle" style="text-align:left; margin-bottom:22px;">
+                Take a minute to reflect on today's study session, we'll turn it into useful insight for you.
+            </p>
+            <form method="post">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    <div class="form-message">{{ form.non_field_errors }}</div>
+                {% endif %}
+                <div class="form-grid">
+                    <div class="form-group">
+                        {{ form.subject.label_tag }}
+                        {{ form.subject }}
+                        {{ form.subject.errors }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.time_of_day.label_tag }}
+                        {{ form.time_of_day }}
+                        {{ form.time_of_day.errors }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.study_hours_per_day.label_tag }}
+                        {{ form.study_hours_per_day }}
+                        {{ form.study_hours_per_day.errors }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.sleep_hours.label_tag }}
+                        {{ form.sleep_hours }}
+                        {{ form.sleep_hours.errors }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.phone_usage_hours.label_tag }}
+                        {{ form.phone_usage_hours }}
+                        {{ form.phone_usage_hours.errors }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.attendance_percentage.label_tag }}
+                        {{ form.attendance_percentage }}
+                        {{ form.attendance_percentage.errors }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.assignments_completed.label_tag }}
+                        {{ form.assignments_completed }}
+                        {{ form.assignments_completed.errors }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.gender.label_tag }}
+                        {{ form.gender }}
+                        {{ form.gender.errors }}
+                    </div>
+                    <div class="form-group full-width">
+                        {{ form.stress_level.label_tag }}
+                        {{ form.stress_level }}
+                        {{ form.stress_level.errors }}
+                    </div>
+                </div>
+                <button type="submit">See My Prediction</button>
+            </form>
+
+            {% if result %}
+                <div class="result {{ result.level|lower }}">
+                    <div>
+                        {% if result.level == "High" %}Great session!
+                        {% elif result.level == "Medium" %}Solid effort today.
+                        {% else %}Tomorrow's a fresh start.{% endif %}
+                    </div>
+                    <div class="score">{{ result.score }}</div>
+                    <span class="level {{ result.level|lower }}">{{ result.level }}</span>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'predictor/js/sidebar.js' %}"></script>
+</body>
+</html>

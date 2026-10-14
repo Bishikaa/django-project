@@ -1,0 +1,173 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyWise — Dashboard</title>
+    <link rel="stylesheet" href="{% static 'predictor/css/dashboard.css' %}">
+</head>
+<body>
+
+<div class="layout">
+
+    <div class="sidebar">
+        <div class="brand">StudyWise</div>
+        <nav>
+            <a href="{% url 'dashboard' %}" class="active">Dashboard</a>
+            <a href="{% url 'predict' %}">Log Session</a>
+        </nav>
+
+    </div>
+
+    <div class="main">
+        <div class="topbar">
+            <div>
+                <div class="page-greeting">Welcome back, {{ user.username }}</div>
+                <h1>Your Study Dashboard</h1>
+                <p class="greeting-subtitle" style="font-size:13px; color:var(--text-muted); margin:4px 0 0;">Here’s a quick look at how your study journey is going.</p>
+            </div>
+            <div class="topbar-right">
+                <div class="topbar-dropdown" id="accountDropdown">
+                    <button type="button" class="topbar-dropdown-trigger" onclick="toggleDropdown('accountDropdown')">
+                        <span class="topbar-user-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </span>
+                        <span class="topbar-username">{{ user.username }}</span>
+                        <span class="topbar-dropdown-arrow">▾</span>
+                    </button>
+                    <div class="topbar-dropdown-menu">
+                        <a href="{% url 'profile' %}" class="topbar-dropdown-item">Profile</a>
+                        <a href="{% url 'profile' %}#account-settings" class="topbar-dropdown-item">Settings</a>
+                        <div class="topbar-dropdown-divider"></div>
+                        <form method="post" action="{% url 'logout' %}" style="margin:0;">
+                            {% csrf_token %}
+                            <button type="submit" class="topbar-dropdown-item">Log out</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if not has_data %}
+            <div class="card empty">
+                No study sessions logged yet. <a href="{% url 'predict' %}">Log your first one</a> to see your dashboard.
+            </div>
+        {% else %}
+
+            <div class="grid">
+                <div class="card hero">
+                    <div class="tag">Latest Session Prediction</div>
+                    <div class="big-number" data-target="{{ latest.predicted_score }}">0</div>
+                    <span class="badge {{ latest.productivity_level|lower }}">{{ latest.productivity_level }}</span>
+                    {% if score_diff is not None %}
+                        {% if score_diff > 0 %}
+                            <p style="margin-top:14px; font-size:13px;">▲ {{ score_diff }} points above your average</p>
+                        {% elif score_diff < 0 %}
+                            <p style="margin-top:14px; font-size:13px;">▼ {{ score_diff|slice:"1:" }} points below your average</p>
+                        {% else %}
+                            <p style="margin-top:14px; font-size:13px;">Right at your average</p>
+                        {% endif %}
+                    {% endif %}
+                </div>
+
+                <div class="card accent">
+                    <div class="tag">Avg Productivity</div>
+                    <div class="big-number" data-target="{{ overall.avg_score|floatformat:1 }}">0</div>
+                    <div class="mini-stats">
+                        <div><strong>{{ overall.avg_study|floatformat:1 }}h</strong>Avg Study</div>
+                        <div><strong>{{ overall.avg_sleep|floatformat:1 }}h</strong>Avg Sleep</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="card col-8">
+                    <h2>Productivity Over Time</h2>
+                    <canvas id="productivityChart" height="100"></canvas>
+                </div>
+
+                <div class="card col-4">
+                    <h2>Patterns</h2>
+                    <div class="insight-row"><div class="icon">📚</div><div>Best subject: <strong>{{ best_subject.subject }}</strong> ({{ best_subject.avg_score|floatformat:1 }})</div></div>
+                    <div class="insight-row"><div class="icon">⏰</div><div>Best time: <strong>{{ best_time.time_of_day }}</strong> ({{ best_time.avg_score|floatformat:1 }})</div></div>
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="card col-6">
+                    <h2>Average Productivity by Subject</h2>
+                    <canvas id="subjectChart" height="100"></canvas>
+                </div>
+
+                <div class="card col-6">
+                    <h2>Insights</h2>
+                    {% if low_sleep_avg and ok_sleep_avg %}
+                        <div class="insight-row"><div class="icon">💤</div><div>Avg score <strong>{{ low_sleep_avg|floatformat:1 }}</strong> on &lt;6h sleep vs <strong>{{ ok_sleep_avg|floatformat:1 }}</strong> on 6h+</div></div>
+                    {% else %}
+                        <div class="insight-row"><div class="icon">💤</div><div>Log more sessions with varied sleep to unlock this insight.</div></div>
+                    {% endif %}
+
+                    {% if best_pattern %}
+                        <div class="insight-row"><div class="icon">🎯</div><div>Your High sessions avg <strong>{{ best_pattern.avg_study|floatformat:1 }}h</strong> study, <strong>{{ best_pattern.avg_sleep|floatformat:1 }}h</strong> sleep, <strong>{{ best_pattern.avg_phone|floatformat:1 }}h</strong> phone.</div></div>
+                    {% else %}
+                        <div class="insight-row"><div class="icon">🎯</div><div>No High session yet, keep logging!</div></div>
+                    {% endif %}
+
+                    {% for tip in coefficient_insights %}
+                        <div class="insight-row"><div class="icon">📈</div><div>{{ tip }}</div></div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="card col-12">
+                    <h2 style="display:flex; justify-content:space-between; align-items:center;">
+                        Recent History
+                        <a href="{% url 'export_csv' %}" class="export-link">⬇ Export CSV</a>
+                    </h2>
+                    <table>
+                        <tr><th>Date</th><th>Subject</th><th>Study Hrs</th><th>Sleep</th><th>Score</th><th>Level</th><th></th></tr>
+                        {% for r in history %}
+                        <tr>
+                            <td>{{ r.created_at|date:"M d, H:i" }}</td>
+                            <td>{{ r.subject }}</td>
+                            <td>{{ r.study_hours_per_day }}</td>
+                            <td>{{ r.sleep_hours }}</td>
+                            <td>{{ r.predicted_score }}</td>
+                            <td><span class="badge {{ r.productivity_level|lower }}">{{ r.productivity_level }}</span></td>
+                            <td>
+                                <form method="post" action="{% url 'delete_record' r.id %}" onsubmit="return confirm('Delete this record?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="delete-btn">✕</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </div>
+
+        {% endif %}
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'predictor/js/dashboard.js' %}"></script>
+<script src="{% static 'predictor/js/sidebar.js' %}"></script>
+{% if has_data %}
+<script>
+    initDashboard(
+        {{ chart_labels|safe }},
+        {{ chart_scores|safe }},
+        {{ subject_labels|safe }},
+        {{ subject_scores|safe }}
+    );
+</script>
+{% endif %}
+
+</body>
+</html>
